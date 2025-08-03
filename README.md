@@ -1,36 +1,105 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Full-Stack USDT Transfer dApp
 
-## Getting Started
+A full-stack dApp for transferring USDT on the Binance Smart Chain, where a backend service pays the gas fees. This allows for transfers from a user's wallet without requiring them to hold BNB.
 
-First, run the development server:
+---
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## How It Works
+
+This dApp uses a "spender" pattern with the ERC20 `transferFrom` function.
+
+1.  **User Approval**: The wallet holding USDT first approves our deployed smart contract to spend a specific amount of their USDT. This is a one-time setup action performed on a block explorer like BSCScan.
+2.  **dApp Interaction**: The recipient connects their wallet to the dApp, enters the USDT holder's address, and initiates the transfer.
+3.  **Backend Execution**: A Next.js backend, funded with BNB, calls the smart contract's `transferUSDT` function. The contract then executes `transferFrom`, moving the approved USDT from the sender to the recipient. The backend's wallet covers the gas fees.
+
+---
+
+## Quick Start Guide
+
+Follow these steps to deploy the contract and run the app.
+
+### Prerequisites
+
+- [Node.js](https://nodejs.org/en/) (v18+)
+- [Yarn](https://yarnpkg.com/) or npm
+- [MetaMask](https://metamask.io/)
+
+### Step 1: Deploy the Smart Contract
+
+Deploy the `USDTTransferSpender` contract to the Binance Smart Chain using a tool like [Remix IDE](https://remix.ethereum.org/).
+
+1.  **Compile**: Open the contract code below in Remix, compile it with Solidity `^0.8.0`.
+2.  **Deploy**:
+    - Connect your wallet to Remix (`Injected Provider - MetaMask`).
+    - In the "Deploy" tab, provide the BSC USDT address for `_usdtTokenAddress`: `0x55d398326f99059fF775485246999027B3197955`.
+    - Deploy the contract.
+3.  **Save the new contract address.** This is your `SPENDER_CONTRACT_ADDRESS`.
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+interface IERC20 {
+    function transferFrom(address sender, address recipient, uint256 amount) external returns (bool);
+    function allowance(address owner, address spender) external view returns (uint256);
+}
+
+contract USDTTransferSpender {
+    address public immutable owner;
+    address public immutable usdtTokenAddress;
+
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Only owner can call");
+        _;
+    }
+
+    constructor(address _usdtTokenAddress) {
+        owner = msg.sender;
+        usdtTokenAddress = _usdtTokenAddress;
+    }
+
+    function transferUSDT(address from, address to, uint256 amount) external onlyOwner {
+        IERC20 usdt = IERC20(usdtTokenAddress);
+        require(usdt.allowance(from, address(this)) >= amount, "Insufficient allowance");
+        bool success = usdt.transferFrom(from, to, amount);
+        require(success, "Transfer failed");
+    }
+}
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Step 2: Configure Environment
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1.  Clone the repo and install dependencies.
+    ```bash
+    git clone https://github.com/your-username/transfer-dapp.git
+    cd transfer-dapp
+    yarn install
+    ```
+2.  Create a `.env.local` file from the example (`cp .env.example .env.local`).
+3.  Fill in your details:
+    ```env
+    # The private key of the wallet that deployed the contract (must hold BNB for gas).
+    SPENDER_PRIVATE_KEY="YOUR_WALLET_PRIVATE_KEY"
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+    # The contract address from Step 1.
+    SPENDER_CONTRACT_ADDRESS="YOUR_DEPLOYED_CONTRACT_ADDRESS"
+    
+    # The official USDT address on BSC.
+    USDT_CONTRACT_ADDRESS="0x55d398326f99059fF775485246999027B3197955"
+    ```
 
-## Learn More
+### Step 3: Grant USDT Allowance
 
-To learn more about Next.js, take a look at the following resources:
+The wallet holding the USDT must grant an allowance to your deployed spender contract.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1.  Go to the [USDT contract on BSCScan](https://bscscan.com/token/0x55d398326f99059fF775485246999027B3197955#writeContract).
+2.  Connect the USDT holder's wallet.
+3.  Use the `approve` function, providing your deployed `SPENDER_CONTRACT_ADDRESS` and the amount of USDT to approve.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Step 4: Run the App
 
-## Deploy on Vercel
+```bash
+yarn dev
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Open [http://localhost:3000](http://localhost:3000) and follow the on-screen instructions to perform a transfer.
