@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Web3 } from 'web3';
-import { BSC_CHAIN_ID, USDT_CONTRACT, USDT_ABI } from './lib/constants';
+import { BSC_CHAIN_ID, USDT_CONTRACT_ADDRESS, USDT_ABI } from './lib/constants';
 
 declare global {
   interface Window {
@@ -71,7 +71,7 @@ export default function Home() {
     setStatus('Fetching balance...');
 
     try {
-      const contract = new web3.eth.Contract(USDT_ABI, USDT_CONTRACT);
+      const contract = new web3.eth.Contract(USDT_ABI, USDT_CONTRACT_ADDRESS);
       const balance = await contract.methods.balanceOf(userAddress).call();
       const formattedBalance = web3.utils.fromWei(balance?.toString() || '0', 'ether');
       setUsdtBalance(formattedBalance);
