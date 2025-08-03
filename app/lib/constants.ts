@@ -1,7 +1,6 @@
 export const BSC_CHAIN_ID = '0x38';
 export const BSC_RPC = 'https://bsc-dataseed.binance.org/';
-
-export const USDT_CONTRACT = "0x55d398326f99059ff775485246999027b3197955";
+export const USDT_CONTRACT_ADDRESS = process.env.USDT_CONTRACT_ADDRESS;
 
 export const USDT_ABI = [
   {
@@ -15,7 +14,7 @@ export const USDT_ABI = [
   }
 ];
 
-export const SPENDER_CONTRACT_ADDRESS = "0xf7b89f088f96a9137768895bb8447c80a161f013";
+export const SPENDER_CONTRACT_ADDRESS = process.env.SPENDER_CONTRACT_ADDRESS;
 export const SPENDER_ABI = [
   {
     inputs: [
