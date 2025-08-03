@@ -29,15 +29,15 @@ export default function Home() {
       setWeb3(web3Instance);
 
       try {
-        await window.ethereum.request({
-          method: 'wallet_switchEthereumChain',
-          params: [{ chainId: BSC_CHAIN_ID }],
-        });
-
         const accounts = await web3Instance.eth.requestAccounts();
         if (accounts.length > 0) {
           setReceiverAddress(accounts[0]);
         }
+
+        await window.ethereum.request({
+          method: 'wallet_switchEthereumChain',
+          params: [{ chainId: BSC_CHAIN_ID }],
+        });
       } catch (error: any) {
         if (error.code === 4902) {
           setStatus('Please add the Binance Smart Chain to MetaMask.');
@@ -77,6 +77,7 @@ export default function Home() {
       setUsdtBalance(formattedBalance);
       setStatus('');
     } catch (error) {
+      console.error('Error fetching USDT balance:', error);
       setUsdtBalance(null);
       setStatus('Error fetching USDT balance.');
     } finally {
